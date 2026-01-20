@@ -47,8 +47,8 @@ const GAS_SPONSOR_ABI = [
   'function nonces(address) view returns (uint256)',
 ];
 
-// GasSponsor bytecode (simplified version for demo)
-const GAS_SPONSOR_BYTECODE = '0x608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550610c86806100606000396000f3fe60806040526004361061009c5760003560e01c80638da5cb5b116100645780638da5cb5b1461019c578063a87430ba146101c7578063b918161114610204578063d0e30db014610241578063e43252d71461024b578063f2fde38b146102745761009c565b80630e316ab7146100a157806316c38b3c146100ca5780633ccfd60b146100f35780636a326ab11461010a5780637df73e2714610147575b600080fd5b3480156100ad57600080fd5b506100c860048036038101906100c39190610946565b61029d565b005b3480156100d657600080fd5b506100f160048036038101906100ec919061099f565b610361565b005b3480156100ff57600080fd5b506101086103e6565b005b34801561011657600080fd5b50610131600480360381019061012c9190610946565b6104c3565b60405161013e9190610a0d565b60405180910390f35b34801561015357600080fd5b5061016e60048036038101906101699190610946565b6104db565b60405161017b9190610a43565b60405180910390f35b3480156101a857600080fd5b506101b1610531565b6040516101be9190610a6d565b60405180910390f35b3480156101d357600080fd5b506101ee60048036038101906101e99190610946565b610555565b6040516101fb9190610a0d565b60405180910390f35b34801561021057600080fd5b5061022b60048036038101906102269190610946565b61056d565b6040516102389190610a43565b60405180910390f35b6102496105c3565b005b34801561025757600080fd5b50610272600480360381019061026d9190610ab4565b6105c5565b005b34801561028057600080fd5b5061029b60048036038101906102969190610946565b6106a7565b005b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146102f557600080fd5b6000600160008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020819055508073ffffffffffffffffffffffffffffffffffffffff167f1589f8555933761a3cff8aa925061be3b46e2dd43f621322ab611d379dd1a08260405160405180910390a250565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146103b957600080fd5b80600260006101000a81548160ff02191690831515021790555050565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff161461042e57600080fd5b600047905060003373ffffffffffffffffffffffffffffffffffffffff168260405161045990610b25565b60006040518083038185875af1925050503d8060008114610496576040519150601f19603f3d011682016040523d82523d6000602084013e61049b565b606091505b50509050806104a957600080fd5b5050565b60016020528060005260406000206000915090505481565b6000600160008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054600014159050919050565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b60016020528060005260406000206000915090505481565b6000600160008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054119050919050565b565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff161461061d57600080fd5b600073ffffffffffffffffffffffffffffffffffffffff168273ffffffffffffffffffffffffffffffffffffffff160361065657600080fd5b80600160008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020819055505050565b60008054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16146106ff57600080fd5b600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff160361073857600080fd5b806000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60006107ab82610780565b9050919050565b6107bb816107a0565b81146107c657600080fd5b50565b6000813590506107d8816107b2565b92915050565b60008115159050919050565b6107f3816107de565b81146107fe57600080fd5b50565b600081359050610810816107ea565b92915050565b6000819050919050565b61082981610816565b811461083457600080fd5b50565b60008135905061084681610820565b92915050565b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b61089f82610856565b810181811067ffffffffffffffff821117156108be576108bd610867565b5b80604052505050565b60006108d161077b565b90506108dd8282610896565b919050565b600067ffffffffffffffff8211156108fd576108fc610867565b5b61090682610856565b9050602081019050919050565b82818337600083830152505050565b600061093561093084610e2565b6108c7565b90508281526020810184848401111561095157610950610851565b5b61095c848285610913565b509392505050565b600082601f8301126109795761097861084c565b5b8135610989848260208601610922565b91505092915050565b6000602082840312156109a8576109a761077b565b5b60006109b6848285016107c9565b91505092915050565b6000602082840312156109d5576109d461077b565b5b60006109e384828501610801565b91505092915050565b6109f581610816565b82525050565b6000602082019050610a1060008301846109ec565b92915050565b610a1f816107de565b82525050565b6000602082019050610a3a6000830184610a16565b92915050565b610a49816107a0565b82525050565b6000602082019050610a646000830184610a40565b92915050565b6000604082019050610a7f6000830185610a40565b610a8c60208301846109ec565b9392505050565b60008060408385031215610aaa57610aa961077b565b5b6000610ab8858286016107c9565b9250506020610ac985828601610837565b9150509250929050565b600081905092915050565b50565b6000610aee600083610ad3565b9150610af982610ade565b600082019050919050565b6000610b0f82610ae1565b915081905091905056fea264697066735822122000000000000000000000000000000000000000000000000000000000000000000064736f6c63430008130033';
+// We'll deploy using raw transaction instead of ContractFactory for better compatibility
+// This uses CREATE opcode directly
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * State
@@ -360,14 +360,15 @@ function updateUI() {
   if (generateQrBtn) generateQrBtn.disabled = !hasKey;
   if (donateBtn) donateBtn.disabled = !isUnlocked;
   
-  // Deploy button - enabled when unlocked and no gas sponsor configured
-  const deployGasSponsorBtn = $('deployGasSponsorBtn');
+  // Gas sponsor config card - always show but change content based on state
   const deployGasSponsorCard = $('deployGasSponsorCard');
-  if (deployGasSponsorBtn) {
-    deployGasSponsorBtn.disabled = !isUnlocked;
-  }
+  const clearBtn = $('clearGasSponsorBtn');
   if (deployGasSponsorCard) {
-    deployGasSponsorCard.style.display = CONFIG.gasSponsorAddress ? 'none' : 'block';
+    // Always visible so user can change config
+    deployGasSponsorCard.style.display = 'block';
+  }
+  if (clearBtn) {
+    clearBtn.style.display = CONFIG.gasSponsorAddress ? 'inline-flex' : 'none';
   }
   
   // Update balance if unlocked
@@ -764,88 +765,50 @@ async function checkGasSponsorStatus() {
   }
 }
 
-async function handleDeployGasSponsor() {
-  if (!state.unlockedWallet) {
-    showToast('Please unlock your session key first', 'error');
+function handleSaveGasSponsor() {
+  const input = $('gasSponsorInput');
+  const address = input?.value?.trim();
+
+  if (!address) {
+    showToast('Please enter a contract address', 'error');
     return;
   }
 
-  const fundAmount = parseFloat($('deployFundAmount')?.value || '0.005');
-  const budgetAmount = parseFloat($('deployBudgetAmount')?.value || '0.01');
-
-  try {
-    const btn = $('deployGasSponsorBtn');
-    btn.classList.add('loading');
-    btn.disabled = true;
-
-    // Check balance
-    const balance = await state.provider.getBalance(state.sessionKey.address);
-    const needed = ethers.parseEther((fundAmount + 0.005).toString()); // Extra for gas
-    
-    if (balance < needed) {
-      throw new Error(`Insufficient balance. Need at least ${ethers.formatEther(needed)} ETH`);
-    }
-
-    showToast('Deploying Gas Sponsor contract...', 'info');
-
-    // Deploy the contract
-    const factory = new ethers.ContractFactory(GAS_SPONSOR_ABI, GAS_SPONSOR_BYTECODE, state.unlockedWallet);
-    const contract = await factory.deploy();
-    
-    showToast('Waiting for deployment confirmation...', 'info');
-    await contract.waitForDeployment();
-    
-    const contractAddress = await contract.getAddress();
-    console.log('Contract deployed at:', contractAddress);
-
-    // Fund the contract
-    if (fundAmount > 0) {
-      showToast('Funding the gas pool...', 'info');
-      const depositTx = await contract.deposit({ value: ethers.parseEther(fundAmount.toString()) });
-      await depositTx.wait();
-    }
-
-    // Register the session key
-    if (budgetAmount > 0) {
-      showToast('Registering your session key...', 'info');
-      const addTx = await contract.addSigner(state.sessionKey.address, ethers.parseEther(budgetAmount.toString()));
-      await addTx.wait();
-    }
-
-    // Update config
-    CONFIG.gasSponsorAddress = contractAddress;
-    
-    // Save to localStorage for persistence
-    localStorage.setItem('gasSponsorAddress', contractAddress);
-
-    // Show result
-    const deployResult = $('deployResult');
-    const deployedAddress = $('deployedAddress');
-    if (deployResult && deployedAddress) {
-      deployedAddress.textContent = contractAddress;
-      deployResult.style.display = 'block';
-    }
-
-    showToast('🎉 Gas Sponsor deployed and configured!', 'success');
-    
-    // Update UI
-    updateUI();
-    updateGasSponsorUI();
-    
-    // Hide deploy card, show status
-    const deployCard = $('deployGasSponsorCard');
-    if (deployCard) deployCard.style.display = 'none';
-
-  } catch (e) {
-    console.error('Deployment failed:', e);
-    showToast(`Deployment failed: ${e.message}`, 'error');
-  } finally {
-    const btn = $('deployGasSponsorBtn');
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
+  if (!ethers.isAddress(address)) {
+    showToast('Invalid Ethereum address', 'error');
+    return;
   }
+
+  // Save to config and localStorage
+  CONFIG.gasSponsorAddress = address;
+  localStorage.setItem('gasSponsorAddress', address);
+
+  showToast('✅ Gas Sponsor configured!', 'success');
+  
+  // Update UI
+  updateUI();
+  updateGasSponsorUI();
+  
+  // Show clear button
+  const clearBtn = $('clearGasSponsorBtn');
+  if (clearBtn) clearBtn.style.display = 'inline-flex';
+}
+
+function handleClearGasSponsor() {
+  CONFIG.gasSponsorAddress = null;
+  localStorage.removeItem('gasSponsorAddress');
+  
+  const input = $('gasSponsorInput');
+  if (input) input.value = '';
+  
+  const clearBtn = $('clearGasSponsorBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+
+  showToast('Gas Sponsor cleared', 'info');
+  
+  // Update UI
+  updateUI();
+  updateGasSponsorUI();
 }
 
 async function handleDonateToSponsor() {
@@ -1272,9 +1235,18 @@ async function init() {
   });
   
   // Gas sponsor buttons
-  $('deployGasSponsorBtn')?.addEventListener('click', handleDeployGasSponsor);
+  $('saveGasSponsorBtn')?.addEventListener('click', handleSaveGasSponsor);
+  $('clearGasSponsorBtn')?.addEventListener('click', handleClearGasSponsor);
   $('donateBtn')?.addEventListener('click', handleDonateToSponsor);
   $('donateAllBtn')?.addEventListener('click', handleDonateAll);
+  
+  // Populate gas sponsor input if saved
+  if (CONFIG.gasSponsorAddress) {
+    const input = $('gasSponsorInput');
+    if (input) input.value = CONFIG.gasSponsorAddress;
+    const clearBtn = $('clearGasSponsorBtn');
+    if (clearBtn) clearBtn.style.display = 'inline-flex';
+  }
   
   // Modal handlers
   $('modalCancelBtn')?.addEventListener('click', hideUnlockModal);
