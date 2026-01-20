@@ -753,7 +753,14 @@ let scannerStream = null;
 let scannerInterval = null;
 
 function showQrModal(tab = 'show') {
-  $('qrModal').style.display = 'flex';
+  console.log('showQrModal called with tab:', tab);
+  const modal = $('qrModal');
+  if (!modal) {
+    console.error('QR Modal element not found!');
+    showToast('QR Modal not found', 'error');
+    return;
+  }
+  modal.style.display = 'flex';
   switchQrTab(tab);
   
   if (tab === 'show' && state.sessionKey) {
@@ -803,8 +810,15 @@ function generateQrCode() {
   const jsonString = JSON.stringify(exportData);
   const canvas = $('qrCanvas');
   
-  // Generate QR code
-  QRCode.toCanvas(canvas, jsonString, {
+  // Check if QRCode library is loaded
+  if (typeof window.QRCode === 'undefined') {
+    console.error('QRCode library not loaded');
+    showToast('QR code library not loaded. Please refresh the page.', 'error');
+    return;
+  }
+  
+  // Generate QR code using global QRCode
+  window.QRCode.toCanvas(canvas, jsonString, {
     width: 280,
     margin: 2,
     color: {
@@ -850,7 +864,7 @@ async function startScanner() {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
         // Use jsQR to detect QR code
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
           inversionAttempts: 'dontInvert'
         });
         
