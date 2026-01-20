@@ -897,6 +897,23 @@ function generateQrCode() {
 async function startScanner() {
   console.log('Starting scanner...');
   
+  // Check if we're on HTTPS (required for camera on mobile)
+  const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (!isSecure && isMobile) {
+    showToast('Camera requires HTTPS on mobile devices. Please use the HTTPS URL or access from desktop.', 'error');
+    console.error('Camera access blocked: HTTPS required on mobile');
+    return;
+  }
+  
+  // Check if mediaDevices is available
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Camera not supported on this browser. Try Chrome or Safari.', 'error');
+    console.error('mediaDevices API not available');
+    return;
+  }
+  
   // Check if jsQR library is loaded
   const jsQRLib = window.jsQR || window.JSQR;
   if (typeof jsQRLib === 'undefined') {
