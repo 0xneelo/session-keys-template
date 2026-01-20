@@ -774,14 +774,19 @@ function hideQrModal() {
 }
 
 function switchQrTab(tabName) {
+  console.log('Switching to tab:', tabName);
+  
   // Update tab buttons
   document.querySelectorAll('.qr-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === tabName);
   });
   
   // Update tab content
-  $('showQrTab').classList.toggle('active', tabName === 'show');
-  $('scanQrTab').classList.toggle('active', tabName === 'scan');
+  const showTab = $('showQrTab');
+  const scanTab = $('scanQrTab');
+  
+  if (showTab) showTab.classList.toggle('active', tabName === 'show');
+  if (scanTab) scanTab.classList.toggle('active', tabName === 'scan');
   
   // Stop scanner if switching away
   if (tabName !== 'scan') {
@@ -840,27 +845,55 @@ function generateQrCode() {
 }
 
 async function startScanner() {
+  console.log('Starting scanner...');
+  
+  // Check if jsQR library is loaded
+  if (typeof window.jsQR === 'undefined') {
+    console.error('jsQR library not loaded');
+    showToast('Scanner library not loaded. Please refresh the page.', 'error');
+    return;
+  }
+  
   try {
     const video = $('scannerVideo');
     const canvas = $('scannerCanvas');
+    
+    if (!video || !canvas) {
+      console.error('Video or canvas element not found');
+      showToast('Scanner elements not found', 'error');
+      return;
+    }
+    
     const ctx = canvas.getContext('2d');
     
     // Request camera access
+    console.log('Requesting camera access...');
     scannerStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment' }
     });
     
     video.srcObject = scannerStream;
     await video.play();
+    console.log('Camera started, video dimensions:', video.videoWidth, 'x', video.videoHeight);
     
     // Update UI
     $('startScanBtn').style.display = 'none';
     $('stopScanBtn').style.display = 'inline-flex';
     $('scanResult').style.display = 'none';
     
+    // Wait for video dimensions to be available
+    await new Promise(resolve => {
+      if (video.videoWidth > 0) {
+        resolve();
+      } else {
+        video.addEventListener('loadedmetadata', resolve, { once: true });
+      }
+    });
+    
     // Set canvas size
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    console.log('Canvas size set to:', canvas.width, 'x', canvas.height);
     
     // Start scanning
     scannerInterval = setInterval(() => {
@@ -874,10 +907,13 @@ async function startScanner() {
         });
         
         if (code) {
+          console.log('QR code detected:', code.data.substring(0, 50) + '...');
           handleScannedCode(code.data);
         }
       }
     }, 100);
+    
+    showToast('Camera started! Point at a QR code.', 'info');
     
   } catch (error) {
     console.error('Scanner error:', error);
