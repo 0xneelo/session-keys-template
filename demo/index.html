@@ -270,6 +270,37 @@
             <p>Manage gas sponsorship for gasless transactions</p>
           </div>
 
+          <!-- Deploy Card (shown when not configured) -->
+          <div class="card" id="deployGasSponsorCard">
+            <div class="card-header">
+              <h2>🚀 Deploy Gas Sponsor Contract</h2>
+            </div>
+            <div class="card-body">
+              <p class="card-description">
+                No gas sponsor is configured. Deploy your own contract to enable gasless transactions!
+                <br><br>
+                <strong>Requirements:</strong> Unlocked session key with at least 0.01 ETH
+              </p>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="deployFundAmount">Initial Pool Funding (ETH)</label>
+                  <input type="number" id="deployFundAmount" value="0.005" step="0.001" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="deployBudgetAmount">Your Budget (ETH)</label>
+                  <input type="number" id="deployBudgetAmount" value="0.01" step="0.001" min="0">
+                </div>
+              </div>
+              <button class="btn btn-primary btn-lg" id="deployGasSponsorBtn" disabled>
+                🚀 Deploy Gas Sponsor Contract
+              </button>
+              <div class="result-box" id="deployResult" style="display: none;">
+                <label>Contract Address</label>
+                <code id="deployedAddress"></code>
+              </div>
+            </div>
+          </div>
+
           <div class="card">
             <div class="card-header">
               <h2>⛽ Gas Pool Status</h2>
