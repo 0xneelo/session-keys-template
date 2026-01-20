@@ -311,6 +311,7 @@ function updateUI() {
 async function updateGasSponsorUI() {
   const gasSponsorOption = $('gasSponsorOption');
   const sponsorStatus = $('sponsorStatus');
+  const donateSection = $('donateSection');
   
   if (!CONFIG.gasSponsorAddress) {
     gasSponsorOption.style.display = 'none';
@@ -322,6 +323,7 @@ async function updateGasSponsorUI() {
   if (!state.sessionKey) {
     sponsorStatus.textContent = 'Create a session key first';
     sponsorStatus.className = 'sponsor-status';
+    donateSection.style.display = 'none';
     return;
   }
 
@@ -329,17 +331,23 @@ async function updateGasSponsorUI() {
     const status = await checkGasSponsorStatus();
     
     if (status.isAllowed) {
-      sponsorStatus.innerHTML = `✅ Your session key is registered! Remaining budget: <strong>${status.remainingBudget} ETH</strong>`;
+      sponsorStatus.innerHTML = `✅ Registered! Budget: <strong>${status.remainingBudget} ETH</strong> | Pool: <strong>${parseFloat(status.contractBalance).toFixed(4)} ETH</strong>`;
       sponsorStatus.className = 'sponsor-status allowed';
+      $('useGasSponsor').disabled = false;
     } else {
-      sponsorStatus.innerHTML = `⚠️ Session key not registered. <a href="#" onclick="copyToClipboard('keyAddress'); return false;">Copy address</a> and ask owner to add it.`;
+      sponsorStatus.innerHTML = `⚠️ Not registered. <a href="#" onclick="copyToClipboard('keyAddress'); return false;">Copy address</a> and ask owner to add it. Pool: <strong>${parseFloat(status.contractBalance).toFixed(4)} ETH</strong>`;
       sponsorStatus.className = 'sponsor-status not-allowed';
       $('useGasSponsor').checked = false;
       $('useGasSponsor').disabled = true;
     }
+
+    // Show donate section if wallet is unlocked
+    donateSection.style.display = state.unlockedWallet ? 'block' : 'none';
+
   } catch (e) {
     sponsorStatus.textContent = 'Failed to check gas sponsor status';
     sponsorStatus.className = 'sponsor-status';
+    donateSection.style.display = 'none';
   }
 }
 
@@ -641,16 +649,99 @@ async function checkGasSponsorStatus() {
     const remainingBudget = isAllowed 
       ? await gasSponsor.getRemainingBudget(state.sessionKey.address)
       : 0n;
+    
+    // Get contract balance
+    const contractBalance = await state.provider.getBalance(CONFIG.gasSponsorAddress);
 
     return {
       available: true,
       isAllowed,
       remainingBudget: ethers.formatEther(remainingBudget),
+      contractBalance: ethers.formatEther(contractBalance),
       contractAddress: CONFIG.gasSponsorAddress,
     };
   } catch (e) {
     console.error('Gas sponsor check failed:', e);
     return { available: false, error: e.message };
+  }
+}
+
+async function handleDonateToSponsor() {
+  const amountInput = $('donateAmount');
+  const amount = amountInput.value;
+
+  if (!amount || parseFloat(amount) <= 0) {
+    showToast('Please enter an amount to donate', 'error');
+    return;
+  }
+
+  if (!state.unlockedWallet) {
+    showToast('Please unlock your session key first', 'error');
+    return;
+  }
+
+  if (!CONFIG.gasSponsorAddress) {
+    showToast('Gas sponsor not configured', 'error');
+    return;
+  }
+
+  try {
+    $('donateBtn').classList.add('loading');
+    $('donateBtn').disabled = true;
+
+    const tx = await state.unlockedWallet.sendTransaction({
+      to: CONFIG.gasSponsorAddress,
+      value: ethers.parseEther(amount),
+    });
+
+    showToast('Donation sent! Waiting for confirmation...', 'info');
+
+    await tx.wait();
+
+    showToast(`Successfully donated ${amount} ETH to gas sponsor pool!`, 'success');
+    amountInput.value = '';
+    
+    // Refresh balance and sponsor status
+    refreshBalance();
+    updateGasSponsorUI();
+
+  } catch (e) {
+    showToast(`Donation failed: ${e.message}`, 'error');
+  } finally {
+    $('donateBtn').classList.remove('loading');
+    $('donateBtn').disabled = false;
+  }
+}
+
+async function handleDonateAll() {
+  if (!state.unlockedWallet || !state.sessionKey) {
+    showToast('Please unlock your session key first', 'error');
+    return;
+  }
+
+  try {
+    // Get current balance
+    const balance = await state.provider.getBalance(state.sessionKey.address);
+    
+    // Estimate gas for the transfer
+    const gasPrice = await state.provider.getFeeData();
+    const gasLimit = 21000n; // Standard ETH transfer
+    const gasCost = gasLimit * (gasPrice.gasPrice || 0n);
+    
+    // Calculate max amount (balance - gas cost - small buffer)
+    const buffer = ethers.parseEther('0.0001'); // Small buffer for safety
+    const maxAmount = balance - gasCost - buffer;
+
+    if (maxAmount <= 0n) {
+      showToast('Insufficient balance to donate (need to cover gas)', 'error');
+      return;
+    }
+
+    $('donateAmount').value = ethers.formatEther(maxAmount);
+    showToast(`Max donation amount set: ${ethers.formatEther(maxAmount)} ETH`, 'info');
+
+  } catch (e) {
+    showToast(`Failed to calculate max amount: ${e.message}`, 'error');
   }
 }
 
@@ -900,6 +991,10 @@ async function init() {
   $('startScanBtn').addEventListener('click', startScanner);
   $('stopScanBtn').addEventListener('click', stopScanner);
   $('openScannerBtn')?.addEventListener('click', () => showQrModal('scan'));
+  
+  // Gas sponsor donate listeners
+  $('donateBtn')?.addEventListener('click', handleDonateToSponsor);
+  $('donateAllBtn')?.addEventListener('click', handleDonateAll);
   
   // QR Tab switching
   document.querySelectorAll('.qr-tab').forEach(tab => {

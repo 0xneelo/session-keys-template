@@ -276,6 +276,14 @@
               </label>
             </div>
             <div class="sponsor-status" id="sponsorStatus"></div>
+            <div class="donate-section" id="donateSection" style="display: none;">
+              <div class="donate-row">
+                <input type="number" id="donateAmount" placeholder="Amount" step="0.001" min="0">
+                <button class="btn btn-secondary" id="donateAllBtn">Max</button>
+                <button class="btn btn-primary" id="donateBtn">💰 Donate to Pool</button>
+              </div>
+              <small class="input-hint">Donate your session key's ETH to the gas sponsor pool</small>
+            </div>
           </div>
 
           <button class="btn btn-primary" id="sendTxBtn" disabled>
