@@ -1062,7 +1062,18 @@ async function init() {
   $('closeQrModal').addEventListener('click', hideQrModal);
   $('startScanBtn').addEventListener('click', startScanner);
   $('stopScanBtn').addEventListener('click', stopScanner);
-  $('openScannerBtn')?.addEventListener('click', () => showQrModal('scan'));
+  
+  // Import section scanner button
+  const openScannerBtn = $('openScannerBtn');
+  console.log('openScannerBtn element:', openScannerBtn);
+  if (openScannerBtn) {
+    openScannerBtn.addEventListener('click', () => {
+      console.log('openScannerBtn clicked!');
+      showQrModal('scan');
+    });
+  } else {
+    console.error('openScannerBtn not found!');
+  }
   
   // Gas sponsor donate listeners
   $('donateBtn')?.addEventListener('click', handleDonateToSponsor);
