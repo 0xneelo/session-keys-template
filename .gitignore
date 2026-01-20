@@ -9,6 +9,7 @@ dist/
 .vscode/
 *.swp
 *.swo
+.cursor/
 
 # OS
 .DS_Store
@@ -18,13 +19,25 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Environment
+# Environment - NEVER commit these
 .env
+.env.*
 .env.local
 .env.*.local
+*.env
+
+# Secrets - NEVER commit these
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Test coverage
 coverage/
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Local testing
+.local/
