@@ -278,26 +278,77 @@ function updateUI() {
   const hasKey = state.sessionKey !== null;
   const isUnlocked = state.unlockedWallet !== null;
   
-  // Show/hide sections
-  $('createKeySection').style.display = hasKey ? 'none' : 'block';
-  $('keyInfoSection').style.display = hasKey ? 'block' : 'none';
-  $('importKeySection').style.display = hasKey ? 'none' : 'block';
+  // Show/hide cards in session section
+  const createKeyCard = $('createKeyCard');
+  const keyInfoCard = $('keyInfoCard');
+  const importKeyCard = $('importKeyCard');
   
-  // Update key status
-  $('keyStatus').textContent = isUnlocked ? 'Unlocked' : 'Locked';
-  $('keyStatus').className = `key-status ${isUnlocked ? 'unlocked' : ''}`;
+  if (createKeyCard) createKeyCard.style.display = hasKey ? 'none' : 'block';
+  if (keyInfoCard) keyInfoCard.style.display = hasKey ? 'block' : 'none';
+  if (importKeyCard) importKeyCard.style.display = hasKey ? 'none' : 'block';
+  
+  // Update key status badge
+  const keyStatus = $('keyStatus');
+  if (keyStatus) {
+    keyStatus.textContent = isUnlocked ? 'Unlocked' : 'Locked';
+    keyStatus.className = `status-badge ${isUnlocked ? 'unlocked' : ''}`;
+  }
+  
+  // Update navbar session info
+  const sessionStatus = $('sessionStatus');
+  const navKeyAddress = $('navKeyAddress');
+  const navKeyBalance = $('navKeyBalance');
+  const navUnlockBtn = $('navUnlockBtn');
+  const donateNavBtn = $('donateNavBtn');
+  
+  if (sessionStatus) {
+    sessionStatus.className = `session-status ${isUnlocked ? 'unlocked' : ''}`;
+  }
+  
+  if (navKeyAddress) {
+    navKeyAddress.textContent = hasKey ? formatAddress(state.sessionKey.address) : 'No Session Key';
+  }
+  
+  if (navUnlockBtn) {
+    navUnlockBtn.style.display = hasKey && !isUnlocked ? 'inline-flex' : 'none';
+  }
+  
+  if (donateNavBtn) {
+    donateNavBtn.style.display = isUnlocked && CONFIG.gasSponsorAddress ? 'inline-flex' : 'none';
+  }
   
   // Update key details
   if (hasKey) {
-    $('keyAddress').textContent = state.sessionKey.address;
-    $('keyExpiry').textContent = formatExpiry(state.sessionKey.expiry);
+    const keyAddress = $('keyAddress');
+    const keyExpiry = $('keyExpiry');
+    const faucetAddress = $('faucetAddress');
+    
+    if (keyAddress) keyAddress.textContent = state.sessionKey.address;
+    if (keyExpiry) keyExpiry.textContent = formatExpiry(state.sessionKey.expiry);
+    if (faucetAddress) faucetAddress.textContent = formatAddress(state.sessionKey.address);
   }
   
+  // Show/hide unlock form vs key actions
+  const unlockForm = $('unlockForm');
+  const keyActions = $('keyActions');
+  
+  if (unlockForm) unlockForm.style.display = isUnlocked ? 'none' : 'flex';
+  if (keyActions) keyActions.style.display = isUnlocked ? 'flex' : 'none';
+  
   // Enable/disable buttons
-  $('signMessageBtn').disabled = !isUnlocked;
-  $('sendTxBtn').disabled = !isUnlocked;
-  $('unlockBtn').disabled = isUnlocked;
-  $('unlockPassword').disabled = isUnlocked;
+  const signMessageBtn = $('signMessageBtn');
+  const sendTxBtn = $('sendTxBtn');
+  const unlockBtn = $('unlockBtn');
+  const unlockPassword = $('unlockPassword');
+  const generateQrBtn = $('generateQrBtn');
+  const donateBtn = $('donateBtn');
+  
+  if (signMessageBtn) signMessageBtn.disabled = !isUnlocked;
+  if (sendTxBtn) sendTxBtn.disabled = !isUnlocked;
+  if (unlockBtn) unlockBtn.disabled = isUnlocked;
+  if (unlockPassword) unlockPassword.disabled = isUnlocked;
+  if (generateQrBtn) generateQrBtn.disabled = !hasKey;
+  if (donateBtn) donateBtn.disabled = !isUnlocked;
   
   // Update balance if unlocked
   if (isUnlocked) {
@@ -309,45 +360,64 @@ function updateUI() {
 }
 
 async function updateGasSponsorUI() {
-  const gasSponsorOption = $('gasSponsorOption');
   const sponsorStatus = $('sponsorStatus');
-  const donateSection = $('donateSection');
+  const gasSponsorCheckbox = $('gasSponsorCheckbox');
+  const gasPoolBalance = $('gasPoolBalance');
+  const gasBudget = $('gasBudget');
+  const gasStatus = $('gasStatus');
   
   if (!CONFIG.gasSponsorAddress) {
-    gasSponsorOption.style.display = 'none';
+    if (gasSponsorCheckbox) gasSponsorCheckbox.style.display = 'none';
+    if (gasPoolBalance) gasPoolBalance.textContent = 'Not configured';
+    if (gasBudget) gasBudget.textContent = '-';
+    if (gasStatus) gasStatus.textContent = 'Disabled';
     return;
   }
 
-  gasSponsorOption.style.display = 'block';
+  if (gasSponsorCheckbox) gasSponsorCheckbox.style.display = 'block';
   
   if (!state.sessionKey) {
-    sponsorStatus.textContent = 'Create a session key first';
-    sponsorStatus.className = 'sponsor-status';
-    donateSection.style.display = 'none';
+    if (sponsorStatus) {
+      sponsorStatus.textContent = 'Create a session key first';
+      sponsorStatus.className = 'sponsor-status';
+    }
+    if (gasPoolBalance) gasPoolBalance.textContent = '-';
+    if (gasBudget) gasBudget.textContent = '-';
+    if (gasStatus) gasStatus.textContent = 'No key';
     return;
   }
 
   try {
     const status = await checkGasSponsorStatus();
     
-    if (status.isAllowed) {
-      sponsorStatus.innerHTML = `✅ Registered! Budget: <strong>${status.remainingBudget} ETH</strong> | Pool: <strong>${parseFloat(status.contractBalance).toFixed(4)} ETH</strong>`;
-      sponsorStatus.className = 'sponsor-status allowed';
-      $('useGasSponsor').disabled = false;
-    } else {
-      sponsorStatus.innerHTML = `⚠️ Not registered. <a href="#" onclick="copyToClipboard('keyAddress'); return false;">Copy address</a> and ask owner to add it. Pool: <strong>${parseFloat(status.contractBalance).toFixed(4)} ETH</strong>`;
-      sponsorStatus.className = 'sponsor-status not-allowed';
-      $('useGasSponsor').checked = false;
-      $('useGasSponsor').disabled = true;
+    if (gasPoolBalance) gasPoolBalance.textContent = `${parseFloat(status.contractBalance || 0).toFixed(4)} ETH`;
+    if (gasBudget) gasBudget.textContent = status.isAllowed ? `${status.remainingBudget} ETH` : 'Not registered';
+    if (gasStatus) gasStatus.textContent = status.isAllowed ? '✅ Active' : '⚠️ Not registered';
+    
+    if (sponsorStatus) {
+      if (status.isAllowed) {
+        sponsorStatus.innerHTML = `✅ Your session key is registered for gas sponsorship!`;
+        sponsorStatus.className = 'sponsor-status allowed';
+      } else {
+        sponsorStatus.innerHTML = `⚠️ Not registered. Contact the pool owner to add your address.`;
+        sponsorStatus.className = 'sponsor-status not-allowed';
+      }
+    }
+    
+    const useGasSponsor = $('useGasSponsor');
+    if (useGasSponsor) {
+      useGasSponsor.disabled = !status.isAllowed;
+      if (!status.isAllowed) useGasSponsor.checked = false;
     }
 
-    // Show donate section if wallet is unlocked
-    donateSection.style.display = state.unlockedWallet ? 'block' : 'none';
-
   } catch (e) {
-    sponsorStatus.textContent = 'Failed to check gas sponsor status';
-    sponsorStatus.className = 'sponsor-status';
-    donateSection.style.display = 'none';
+    if (sponsorStatus) {
+      sponsorStatus.textContent = 'Failed to check gas sponsor status';
+      sponsorStatus.className = 'sponsor-status';
+    }
+    if (gasPoolBalance) gasPoolBalance.textContent = 'Error';
+    if (gasBudget) gasBudget.textContent = 'Error';
+    if (gasStatus) gasStatus.textContent = 'Error';
   }
 }
 
@@ -357,7 +427,15 @@ async function refreshBalance() {
   try {
     const balance = await state.provider.getBalance(state.sessionKey.address);
     const formatted = ethers.formatEther(balance);
-    $('keyBalance').textContent = parseFloat(formatted).toFixed(4);
+    const balanceStr = parseFloat(formatted).toFixed(4);
+    
+    // Update main balance display
+    const keyBalance = $('keyBalance');
+    if (keyBalance) keyBalance.textContent = balanceStr;
+    
+    // Update navbar balance
+    const navKeyBalance = $('navKeyBalance');
+    if (navKeyBalance) navKeyBalance.textContent = `${balanceStr} ETH`;
   } catch (e) {
     console.error('Failed to fetch balance:', e);
   }
@@ -752,47 +830,7 @@ async function handleDonateAll() {
 let scannerStream = null;
 let scannerInterval = null;
 
-function showQrModal(tab = 'show') {
-  console.log('showQrModal called with tab:', tab);
-  const modal = $('qrModal');
-  if (!modal) {
-    console.error('QR Modal element not found!');
-    showToast('QR Modal not found', 'error');
-    return;
-  }
-  modal.style.display = 'flex';
-  switchQrTab(tab);
-  
-  if (tab === 'show' && state.sessionKey) {
-    generateQrCode();
-  }
-}
-
-function hideQrModal() {
-  $('qrModal').style.display = 'none';
-  stopScanner();
-}
-
-function switchQrTab(tabName) {
-  console.log('Switching to tab:', tabName);
-  
-  // Update tab buttons
-  document.querySelectorAll('.qr-tab').forEach(tab => {
-    tab.classList.toggle('active', tab.dataset.tab === tabName);
-  });
-  
-  // Update tab content
-  const showTab = $('showQrTab');
-  const scanTab = $('scanQrTab');
-  
-  if (showTab) showTab.classList.toggle('active', tabName === 'show');
-  if (scanTab) scanTab.classList.toggle('active', tabName === 'scan');
-  
-  // Stop scanner if switching away
-  if (tabName !== 'scan') {
-    stopScanner();
-  }
-}
+// QR code functions are now inline in the sync section
 
 function generateQrCode() {
   if (!state.sessionKey) {
@@ -1013,10 +1051,12 @@ async function handleScannedCode(data) {
     
     showToast('Session key imported successfully!', 'success');
     
-    // Close modal after delay
+    // Update UI after delay
     setTimeout(() => {
-      hideQrModal();
+      stopScanner();
       updateUI();
+      // Navigate to session section
+      navigateToSection('session');
     }, 2000);
     
   } catch (error) {
@@ -1041,61 +1081,79 @@ async function init() {
   // Update network status
   try {
     const network = await state.provider.getNetwork();
-    $('networkName').textContent = `${CONFIG.chainName} (${network.chainId})`;
-    $('networkBadge').classList.add('connected');
+    const networkName = $('networkName');
+    if (networkName) networkName.textContent = CONFIG.chainName;
   } catch (e) {
-    $('networkName').textContent = 'Connection Failed';
+    const networkName = $('networkName');
+    if (networkName) networkName.textContent = 'Offline';
   }
   
   // Load existing session key
   state.sessionKey = loadSessionKey();
   
-  // Setup event listeners
-  $('createKeyBtn').addEventListener('click', handleCreateKey);
-  $('unlockBtn').addEventListener('click', handleUnlock);
-  $('deleteKeyBtn').addEventListener('click', handleDeleteKey);
-  $('signMessageBtn').addEventListener('click', handleSignMessage);
-  $('sendTxBtn').addEventListener('click', handleSendTransaction);
-  
-  // QR Code event listeners
-  $('showQrBtn').addEventListener('click', () => showQrModal('show'));
-  $('closeQrModal').addEventListener('click', hideQrModal);
-  $('startScanBtn').addEventListener('click', startScanner);
-  $('stopScanBtn').addEventListener('click', stopScanner);
-  
-  // Import section scanner button
-  const openScannerBtn = $('openScannerBtn');
-  console.log('openScannerBtn element:', openScannerBtn);
-  if (openScannerBtn) {
-    openScannerBtn.addEventListener('click', () => {
-      console.log('openScannerBtn clicked!');
-      showQrModal('scan');
+  // Sidebar navigation
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      // Update active nav item
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      
+      // Show corresponding section
+      const sectionId = 'section' + item.dataset.section.charAt(0).toUpperCase() + item.dataset.section.slice(1);
+      document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+      const section = $(sectionId);
+      if (section) section.classList.add('active');
     });
-  } else {
-    console.error('openScannerBtn not found!');
-  }
+  });
   
-  // Gas sponsor donate listeners
+  // Core session key buttons
+  $('createKeyBtn')?.addEventListener('click', handleCreateKey);
+  $('unlockBtn')?.addEventListener('click', handleUnlock);
+  $('deleteKeyBtn')?.addEventListener('click', handleDeleteKey);
+  $('signMessageBtn')?.addEventListener('click', handleSignMessage);
+  $('sendTxBtn')?.addEventListener('click', handleSendTransaction);
+  
+  // Navbar buttons
+  $('claimEthBtn')?.addEventListener('click', showFaucetModal);
+  $('donateNavBtn')?.addEventListener('click', () => navigateToSection('gas'));
+  $('navUnlockBtn')?.addEventListener('click', showUnlockModal);
+  
+  // QR/Sync buttons
+  $('showQrBtn')?.addEventListener('click', () => navigateToSection('sync'));
+  $('generateQrBtn')?.addEventListener('click', generateQrCode);
+  $('startScanBtn')?.addEventListener('click', startScanner);
+  $('stopScanBtn')?.addEventListener('click', stopScanner);
+  $('openScannerBtn')?.addEventListener('click', () => {
+    navigateToSection('sync');
+    setTimeout(startScanner, 300);
+  });
+  
+  // Gas sponsor buttons
   $('donateBtn')?.addEventListener('click', handleDonateToSponsor);
   $('donateAllBtn')?.addEventListener('click', handleDonateAll);
   
-  // QR Tab switching
-  document.querySelectorAll('.qr-tab').forEach(tab => {
-    tab.addEventListener('click', () => switchQrTab(tab.dataset.tab));
-  });
-  
-  // Close modal on backdrop click
-  $('qrModal').addEventListener('click', (e) => {
-    if (e.target === $('qrModal')) hideQrModal();
-  });
+  // Modal handlers
+  $('modalCancelBtn')?.addEventListener('click', hideUnlockModal);
+  $('modalUnlockBtn')?.addEventListener('click', handleModalUnlock);
   
   // Enter key handlers
-  $('password').addEventListener('keypress', (e) => {
+  $('password')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleCreateKey();
   });
   
-  $('unlockPassword').addEventListener('keypress', (e) => {
+  $('unlockPassword')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleUnlock();
+  });
+  
+  $('modalUnlockPassword')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleModalUnlock();
+  });
+  
+  // Close modals on backdrop click
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+    });
   });
   
   // Initial UI update
@@ -1103,12 +1161,76 @@ async function init() {
   
   console.log('🔐 Session Keys Demo initialized');
   console.log(`📡 Connected to ${CONFIG.chainName}`);
-  console.log(`📬 Send ETH to: ${CONFIG.recipientAddress}`);
+}
+
+// Navigation helper
+function navigateToSection(sectionName) {
+  document.querySelectorAll('.nav-item').forEach(i => {
+    i.classList.toggle('active', i.dataset.section === sectionName);
+  });
+  document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+  const section = $('section' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1));
+  if (section) section.classList.add('active');
+}
+
+// Faucet modal
+function showFaucetModal() {
+  const faucetAddress = $('faucetAddress');
+  if (faucetAddress && state.sessionKey) {
+    faucetAddress.textContent = formatAddress(state.sessionKey.address);
+  }
+  const modal = $('faucetModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeFaucetModal() {
+  const modal = $('faucetModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Unlock modal
+function showUnlockModal() {
+  const modal = $('unlockModal');
+  if (modal) modal.style.display = 'flex';
+  $('modalUnlockPassword')?.focus();
+}
+
+function hideUnlockModal() {
+  const modal = $('unlockModal');
+  if (modal) modal.style.display = 'none';
+  const input = $('modalUnlockPassword');
+  if (input) input.value = '';
+}
+
+async function handleModalUnlock() {
+  const password = $('modalUnlockPassword')?.value;
+  if (!password) {
+    showToast('Please enter your password', 'error');
+    return;
+  }
+  
+  try {
+    const decrypted = await decryptPrivateKey(
+      state.sessionKey.encryptedPrivateKey,
+      password,
+      state.sessionKey.salt,
+      state.sessionKey.iv
+    );
+    
+    state.unlockedWallet = new ethers.Wallet(decrypted, state.provider);
+    hideUnlockModal();
+    updateUI();
+    showToast('Session key unlocked!', 'success');
+  } catch (e) {
+    showToast('Invalid password', 'error');
+  }
 }
 
 // Global function for copy button
 window.copyToClipboard = async function(elementId) {
-  const text = $(elementId).textContent;
+  const el = $(elementId);
+  if (!el) return;
+  const text = el.textContent;
   await navigator.clipboard.writeText(text);
   showToast('Copied to clipboard!', 'success');
 };
@@ -1118,6 +1240,9 @@ window.refreshBalance = refreshBalance;
 
 // Global function for mnemonic
 window.hideMnemonic = hideMnemonic;
+
+// Global function for faucet modal
+window.closeFaucetModal = closeFaucetModal;
 
 // Start the app
 init();

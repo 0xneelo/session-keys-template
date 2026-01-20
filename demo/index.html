@@ -10,300 +10,434 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app">
-    <!-- Header -->
-    <header class="header">
-      <div class="logo">
+  <div class="app-layout">
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+      <div class="navbar-brand">
         <span class="logo-icon">🔐</span>
         <span class="logo-text">Session Keys</span>
       </div>
-      <div class="network-badge" id="networkBadge">
-        <span class="network-dot"></span>
-        <span id="networkName">Not Connected</span>
-      </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="main">
-      <!-- Step 1: Create Session Key -->
-      <section class="card" id="createKeySection">
-        <div class="card-header">
-          <span class="step-number">1</span>
-          <h2>Create Session Key</h2>
-        </div>
-        <div class="card-content">
-          <p class="description">
-            Generate a new session key that will be stored encrypted in your browser.
-            This key can sign transactions without exposing your main wallet.
-          </p>
-          
-          <div class="form-group">
-            <label for="password">Encryption Password</label>
-            <input type="password" id="password" placeholder="Min 8 characters" minlength="8">
+      <div class="navbar-center">
+        <!-- Session Key Selector -->
+        <div class="session-selector" id="sessionSelector">
+          <div class="session-info" id="sessionInfo">
+            <span class="session-status" id="sessionStatus">●</span>
+            <span class="session-address" id="navKeyAddress">No Session Key</span>
+            <span class="session-balance" id="navKeyBalance"></span>
           </div>
-          
-          <div class="form-group">
-            <label for="expiry">Key Expiry</label>
-            <select id="expiry">
-              <option value="3600">1 Hour</option>
-              <option value="86400" selected>24 Hours</option>
-              <option value="604800">7 Days</option>
-            </select>
-          </div>
-
-          <div class="checkbox-group">
-            <input type="checkbox" id="withMnemonic">
-            <label for="withMnemonic">Generate with mnemonic backup</label>
-          </div>
-
-          <button class="btn btn-primary" id="createKeyBtn">
-            <span class="btn-icon">✨</span>
-            Create Session Key
-          </button>
-        </div>
-      </section>
-
-      <!-- Session Key Info -->
-      <section class="card" id="keyInfoSection" style="display: none;">
-        <div class="card-header">
-          <span class="step-number">✓</span>
-          <h2>Your Session Key</h2>
-          <span class="key-status" id="keyStatus">Locked</span>
-        </div>
-        <div class="card-content">
-          <div class="key-details">
-            <div class="key-field">
-              <label>Address</label>
-              <div class="address-display">
-                <code id="keyAddress">-</code>
-                <button class="btn-icon-only" onclick="copyToClipboard('keyAddress')" title="Copy">📋</button>
-              </div>
-            </div>
-            <div class="key-field">
-              <label>Balance</label>
-              <div class="balance-display">
-                <span id="keyBalance">0.0000</span> ETH
-                <button class="btn-icon-only" onclick="refreshBalance()" title="Refresh">🔄</button>
-              </div>
-            </div>
-            <div class="key-field">
-              <label>Expires</label>
-              <span id="keyExpiry">-</span>
-            </div>
-          </div>
-
-          <!-- Mnemonic Display (only shown once) -->
-          <div class="mnemonic-display" id="mnemonicDisplay" style="display: none;">
-            <div class="mnemonic-warning">
-              ⚠️ Write down this phrase! It won't be shown again.
-            </div>
-            <div class="mnemonic-words" id="mnemonicWords"></div>
-            <button class="btn btn-secondary" onclick="hideMnemonic()">I've saved it</button>
-          </div>
-
-          <div class="key-actions">
-            <div class="form-group inline">
-              <input type="password" id="unlockPassword" placeholder="Enter password to unlock">
-              <button class="btn btn-secondary" id="unlockBtn">🔓 Unlock</button>
-            </div>
-            <div class="key-actions-row">
-              <button class="btn btn-secondary" id="showQrBtn">📱 Sync to Mobile</button>
-              <button class="btn btn-danger" id="deleteKeyBtn">🗑️ Delete Key</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Import Session Key (shown when no key exists) -->
-      <section class="card" id="importKeySection" style="display: none;">
-        <div class="card-header">
-          <span class="step-number">📥</span>
-          <h2>Import Session Key</h2>
-        </div>
-        <div class="card-content">
-          <p class="description">
-            Scan a QR code from another device to import an existing session key.
-          </p>
-          <button class="btn btn-primary" id="openScannerBtn">
-            <span class="btn-icon">📷</span>
-            Scan QR Code
-          </button>
-        </div>
-      </section>
-
-      <!-- Step 2: Get Testnet ETH -->
-      <section class="card" id="faucetSection">
-        <div class="card-header">
-          <span class="step-number">2</span>
-          <h2>Get Testnet ETH</h2>
-        </div>
-        <div class="card-content">
-          <p class="description">
-            You'll need testnet ETH to send transactions. Use one of these faucets:
-          </p>
-          
-          <div class="faucet-links">
-            <a href="https://sepoliafaucet.com/" target="_blank" class="faucet-link">
-              <span class="faucet-icon">🚰</span>
-              <div>
-                <strong>Sepolia Faucet</strong>
-                <span>sepoliafaucet.com</span>
-              </div>
-            </a>
-            <a href="https://www.alchemy.com/faucets/ethereum-sepolia" target="_blank" class="faucet-link">
-              <span class="faucet-icon">⚗️</span>
-              <div>
-                <strong>Alchemy Faucet</strong>
-                <span>alchemy.com</span>
-              </div>
-            </a>
-            <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" class="faucet-link">
-              <span class="faucet-icon">☁️</span>
-              <div>
-                <strong>Google Cloud Faucet</strong>
-                <span>cloud.google.com</span>
-              </div>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <!-- Step 3: Sign Message -->
-      <section class="card" id="signSection">
-        <div class="card-header">
-          <span class="step-number">3</span>
-          <h2>Sign a Message</h2>
-        </div>
-        <div class="card-content">
-          <p class="description">
-            Test signing a message with your session key (no gas required).
-          </p>
-          
-          <div class="form-group">
-            <label for="messageToSign">Message</label>
-            <textarea id="messageToSign" placeholder="Enter a message to sign...">Hello World! This message was sent using Session Keys.</textarea>
-          </div>
-
-          <button class="btn btn-primary" id="signMessageBtn" disabled>
-            <span class="btn-icon">✍️</span>
-            Sign Message
-          </button>
-
-          <div class="signature-result" id="signatureResult" style="display: none;">
-            <label>Signature</label>
-            <code id="signatureOutput"></code>
-          </div>
-        </div>
-      </section>
-
-      <!-- Step 4: Send Transaction -->
-      <section class="card" id="sendSection">
-        <div class="card-header">
-          <span class="step-number">4</span>
-          <h2>Send Transaction</h2>
-        </div>
-        <div class="card-content">
-          <p class="description">
-            Send testnet ETH to the specified address using your session key.
-          </p>
-          
-          <div class="form-group">
-            <label for="recipientAddress">Recipient Address</label>
-            <input type="text" id="recipientAddress" value="0x83B285E802D76055169B1C5e3bF21702B85b89Cb" readonly>
-          </div>
-
-          <div class="form-group">
-            <label for="sendAmount">Amount (ETH)</label>
-            <input type="number" id="sendAmount" value="0.001" step="0.0001" min="0">
-          </div>
-
-          <div class="form-group">
-            <label for="txMessage">Message (optional - will be visible on Etherscan!)</label>
-            <input type="text" id="txMessage" placeholder="e.g. Hello from Session Keys!" maxlength="100" value="Hello World! This message was sent using Session Keys.">
-            <small class="input-hint">This message will be encoded in the transaction data</small>
-          </div>
-
-          <div class="gas-sponsor-option" id="gasSponsorOption" style="display: none;">
-            <div class="checkbox-group">
-              <input type="checkbox" id="useGasSponsor">
-              <label for="useGasSponsor">
-                ⛽ Use Gas Sponsor (no ETH needed in session key!)
-              </label>
-            </div>
-            <div class="sponsor-status" id="sponsorStatus"></div>
-            <div class="donate-section" id="donateSection" style="display: none;">
-              <div class="donate-row">
-                <input type="number" id="donateAmount" placeholder="Amount" step="0.001" min="0">
-                <button class="btn btn-secondary" id="donateAllBtn">Max</button>
-                <button class="btn btn-primary" id="donateBtn">💰 Donate to Pool</button>
-              </div>
-              <small class="input-hint">Donate your session key's ETH to the gas sponsor pool</small>
-            </div>
-          </div>
-
-          <button class="btn btn-primary" id="sendTxBtn" disabled>
-            <span class="btn-icon">📤</span>
-            Send Transaction
-          </button>
-
-          <div class="tx-result" id="txResult" style="display: none;">
-            <div class="tx-status" id="txStatus"></div>
-            <a href="#" id="txLink" target="_blank" class="tx-link">View on Etherscan →</a>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- QR Code Modal (Global - accessible from any section) -->
-    <div class="qr-modal" id="qrModal" style="display: none;">
-      <div class="qr-modal-content">
-        <div class="qr-modal-header">
-          <h3>📱 Sync Session Key</h3>
-          <button class="btn-close" id="closeQrModal">✕</button>
-        </div>
-        <div class="qr-tabs">
-          <button class="qr-tab active" data-tab="show">Show QR Code</button>
-          <button class="qr-tab" data-tab="scan">Scan QR Code</button>
-        </div>
-        
-        <!-- Show QR Tab -->
-        <div class="qr-tab-content active" id="showQrTab">
-          <p class="qr-description">
-            Scan this QR code with your other device to sync your session key.
-            <strong>You'll need your password to unlock it.</strong>
-          </p>
-          <div class="qr-code-container">
-            <div id="qrCodeContainer"></div>
-          </div>
-          <p class="qr-hint">⚠️ The QR contains encrypted data - your password is still required</p>
-        </div>
-        
-        <!-- Scan QR Tab -->
-        <div class="qr-tab-content" id="scanQrTab">
-          <p class="qr-description">
-            Point your camera at a session key QR code to import it.
-          </p>
-          <div class="scanner-container">
-            <video id="scannerVideo" autoplay playsinline></video>
-            <canvas id="scannerCanvas" style="display: none;"></canvas>
-            <div class="scanner-overlay">
-              <div class="scanner-frame"></div>
-            </div>
-          </div>
-          <div class="scanner-controls">
-            <button class="btn btn-primary" id="startScanBtn">📷 Start Camera</button>
-            <button class="btn btn-secondary" id="stopScanBtn" style="display: none;">⏹️ Stop</button>
-          </div>
-          <div class="scan-result" id="scanResult" style="display: none;"></div>
+          <button class="btn btn-sm btn-secondary" id="navUnlockBtn" style="display: none;">🔓</button>
         </div>
       </div>
+
+      <div class="navbar-actions">
+        <button class="btn btn-sm btn-accent" id="claimEthBtn" title="Get testnet ETH">
+          🚰 Claim ETH
+        </button>
+        <button class="btn btn-sm btn-primary" id="donateNavBtn" title="Donate to gas pool" style="display: none;">
+          💰 Donate
+        </button>
+        <div class="network-badge" id="networkBadge">
+          <span class="network-dot"></span>
+          <span id="networkName">Sepolia</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="app-body">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-section="session">
+            <span class="nav-icon">🔑</span>
+            <span class="nav-label">Session Key</span>
+          </button>
+          <button class="nav-item" data-section="sign">
+            <span class="nav-icon">✍️</span>
+            <span class="nav-label">Sign Message</span>
+          </button>
+          <button class="nav-item" data-section="send">
+            <span class="nav-icon">📤</span>
+            <span class="nav-label">Send Transaction</span>
+          </button>
+          <button class="nav-item" data-section="gas">
+            <span class="nav-icon">⛽</span>
+            <span class="nav-label">Gas Sponsor</span>
+          </button>
+          <button class="nav-item" data-section="sync">
+            <span class="nav-icon">📱</span>
+            <span class="nav-label">Sync Device</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <a href="https://github.com/0xneelo/session-keys-template" target="_blank" class="sidebar-link">
+            📂 GitHub
+          </a>
+          <a href="https://docs.symm.io" target="_blank" class="sidebar-link">
+            📚 Docs
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Session Key Section -->
+        <section class="content-section active" id="sectionSession">
+          <div class="section-header">
+            <h1>Session Key Management</h1>
+            <p>Create, manage, and unlock your session keys</p>
+          </div>
+
+          <!-- Create Key Card -->
+          <div class="card" id="createKeyCard">
+            <div class="card-header">
+              <h2>✨ Create New Session Key</h2>
+            </div>
+            <div class="card-body">
+              <p class="card-description">
+                Generate a new session key that will be stored encrypted in your browser.
+              </p>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="password">Encryption Password</label>
+                  <input type="password" id="password" placeholder="Min 8 characters" minlength="8">
+                </div>
+                <div class="form-group">
+                  <label for="expiry">Key Expiry</label>
+                  <select id="expiry">
+                    <option value="3600">1 Hour</option>
+                    <option value="86400" selected>24 Hours</option>
+                    <option value="604800">7 Days</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="checkbox-group">
+                <input type="checkbox" id="withMnemonic">
+                <label for="withMnemonic">Generate with mnemonic backup phrase</label>
+              </div>
+
+              <button class="btn btn-primary btn-lg" id="createKeyBtn">
+                Create Session Key
+              </button>
+            </div>
+          </div>
+
+          <!-- Key Info Card -->
+          <div class="card" id="keyInfoCard" style="display: none;">
+            <div class="card-header">
+              <h2>🔑 Your Session Key</h2>
+              <span class="status-badge" id="keyStatus">Locked</span>
+            </div>
+            <div class="card-body">
+              <div class="key-grid">
+                <div class="key-stat">
+                  <label>Address</label>
+                  <div class="stat-value">
+                    <code id="keyAddress">-</code>
+                    <button class="btn-icon" onclick="copyToClipboard('keyAddress')" title="Copy">📋</button>
+                  </div>
+                </div>
+                <div class="key-stat">
+                  <label>Balance</label>
+                  <div class="stat-value">
+                    <span id="keyBalance">0.0000</span> ETH
+                    <button class="btn-icon" onclick="refreshBalance()" title="Refresh">🔄</button>
+                  </div>
+                </div>
+                <div class="key-stat">
+                  <label>Expires</label>
+                  <div class="stat-value">
+                    <span id="keyExpiry">-</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mnemonic Display -->
+              <div class="mnemonic-display" id="mnemonicDisplay" style="display: none;">
+                <div class="mnemonic-warning">
+                  ⚠️ Write down this phrase! It won't be shown again.
+                </div>
+                <div class="mnemonic-words" id="mnemonicWords"></div>
+                <button class="btn btn-secondary" onclick="hideMnemonic()">I've saved it</button>
+              </div>
+
+              <!-- Unlock Form -->
+              <div class="unlock-form" id="unlockForm">
+                <input type="password" id="unlockPassword" placeholder="Enter password to unlock">
+                <button class="btn btn-primary" id="unlockBtn">🔓 Unlock</button>
+              </div>
+
+              <!-- Key Actions -->
+              <div class="key-actions" id="keyActions" style="display: none;">
+                <button class="btn btn-secondary" id="showQrBtn">📱 Sync to Mobile</button>
+                <button class="btn btn-danger" id="deleteKeyBtn">🗑️ Delete Key</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Import Key Card -->
+          <div class="card" id="importKeyCard" style="display: none;">
+            <div class="card-header">
+              <h2>📥 Import Session Key</h2>
+            </div>
+            <div class="card-body">
+              <p class="card-description">
+                Scan a QR code from another device to import an existing session key.
+              </p>
+              <button class="btn btn-primary" id="openScannerBtn">
+                📷 Scan QR Code
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sign Message Section -->
+        <section class="content-section" id="sectionSign">
+          <div class="section-header">
+            <h1>Sign Message</h1>
+            <p>Cryptographically sign a message with your session key (no gas required)</p>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="form-group">
+                <label for="messageToSign">Message to Sign</label>
+                <textarea id="messageToSign" rows="4" placeholder="Enter a message to sign...">Hello World! This message was sent using Session Keys.</textarea>
+              </div>
+
+              <button class="btn btn-primary btn-lg" id="signMessageBtn" disabled>
+                ✍️ Sign Message
+              </button>
+
+              <div class="result-box" id="signatureResult" style="display: none;">
+                <label>Signature</label>
+                <code id="signatureOutput"></code>
+                <button class="btn-icon" onclick="copyToClipboard('signatureOutput')" title="Copy">📋</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Send Transaction Section -->
+        <section class="content-section" id="sectionSend">
+          <div class="section-header">
+            <h1>Send Transaction</h1>
+            <p>Send testnet ETH using your session key</p>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="form-group">
+                <label for="recipientAddress">Recipient Address</label>
+                <input type="text" id="recipientAddress" value="0x83B285E802D76055169B1C5e3bF21702B85b89Cb">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="sendAmount">Amount (ETH)</label>
+                  <input type="number" id="sendAmount" value="0.001" step="0.0001" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="txMessage">On-chain Message</label>
+                  <input type="text" id="txMessage" value="Hello World! This message was sent using Session Keys." maxlength="100">
+                </div>
+              </div>
+
+              <div class="checkbox-group" id="gasSponsorCheckbox" style="display: none;">
+                <input type="checkbox" id="useGasSponsor">
+                <label for="useGasSponsor">⛽ Use Gas Sponsor (no ETH needed!)</label>
+              </div>
+
+              <button class="btn btn-primary btn-lg" id="sendTxBtn" disabled>
+                📤 Send Transaction
+              </button>
+
+              <div class="result-box success" id="txResult" style="display: none;">
+                <div class="tx-status" id="txStatus"></div>
+                <a href="#" id="txLink" target="_blank" class="tx-link">View on Etherscan →</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Gas Sponsor Section -->
+        <section class="content-section" id="sectionGas">
+          <div class="section-header">
+            <h1>Gas Sponsor</h1>
+            <p>Manage gas sponsorship for gasless transactions</p>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>⛽ Gas Pool Status</h2>
+            </div>
+            <div class="card-body">
+              <div class="gas-stats" id="gasStats">
+                <div class="gas-stat">
+                  <label>Pool Balance</label>
+                  <span class="stat-value" id="gasPoolBalance">-</span>
+                </div>
+                <div class="gas-stat">
+                  <label>Your Budget</label>
+                  <span class="stat-value" id="gasBudget">-</span>
+                </div>
+                <div class="gas-stat">
+                  <label>Status</label>
+                  <span class="stat-value" id="gasStatus">-</span>
+                </div>
+              </div>
+
+              <div class="sponsor-status" id="sponsorStatus"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>💰 Donate to Pool</h2>
+            </div>
+            <div class="card-body">
+              <p class="card-description">
+                Donate your session key's ETH to the gas sponsor pool. This helps everyone use gasless transactions!
+              </p>
+              <div class="form-row">
+                <div class="form-group flex-grow">
+                  <label for="donateAmount">Amount (ETH)</label>
+                  <input type="number" id="donateAmount" placeholder="0.01" step="0.001" min="0">
+                </div>
+                <div class="form-group">
+                  <label>&nbsp;</label>
+                  <button class="btn btn-secondary" id="donateAllBtn">Max</button>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-lg" id="donateBtn">
+                💰 Donate to Gas Pool
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>🚰 Get Testnet ETH</h2>
+            </div>
+            <div class="card-body">
+              <div class="faucet-grid">
+                <a href="https://sepoliafaucet.com/" target="_blank" class="faucet-card">
+                  <span class="faucet-icon">🚰</span>
+                  <strong>Sepolia Faucet</strong>
+                  <span>sepoliafaucet.com</span>
+                </a>
+                <a href="https://www.alchemy.com/faucets/ethereum-sepolia" target="_blank" class="faucet-card">
+                  <span class="faucet-icon">⚗️</span>
+                  <strong>Alchemy Faucet</strong>
+                  <span>alchemy.com</span>
+                </a>
+                <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" class="faucet-card">
+                  <span class="faucet-icon">☁️</span>
+                  <strong>Google Cloud</strong>
+                  <span>cloud.google.com</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sync Device Section -->
+        <section class="content-section" id="sectionSync">
+          <div class="section-header">
+            <h1>Sync Device</h1>
+            <p>Transfer your session key to another device using QR codes</p>
+          </div>
+
+          <div class="sync-grid">
+            <div class="card">
+              <div class="card-header">
+                <h2>📤 Export to Device</h2>
+              </div>
+              <div class="card-body centered">
+                <p class="card-description">
+                  Show a QR code to scan with your other device.
+                  <strong>Your password is still required to unlock.</strong>
+                </p>
+                <div class="qr-code-container" id="exportQrContainer">
+                  <div id="qrCodeContainer"></div>
+                </div>
+                <button class="btn btn-primary" id="generateQrBtn">Generate QR Code</button>
+                <p class="qr-hint">⚠️ The QR contains encrypted data</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h2>📥 Import from Device</h2>
+              </div>
+              <div class="card-body centered">
+                <p class="card-description">
+                  Scan a QR code from another device to import a session key.
+                </p>
+                <div class="scanner-container" id="syncScannerContainer">
+                  <video id="scannerVideo" autoplay playsinline></video>
+                  <canvas id="scannerCanvas" style="display: none;"></canvas>
+                  <div class="scanner-overlay">
+                    <div class="scanner-frame"></div>
+                  </div>
+                </div>
+                <div class="scanner-controls">
+                  <button class="btn btn-primary" id="startScanBtn">📷 Start Camera</button>
+                  <button class="btn btn-secondary" id="stopScanBtn" style="display: none;">⏹️ Stop</button>
+                </div>
+                <div class="scan-result" id="scanResult" style="display: none;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
 
     <!-- Toast Notifications -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Unlock Modal -->
+    <div class="modal" id="unlockModal" style="display: none;">
+      <div class="modal-content">
+        <h3>🔓 Unlock Session Key</h3>
+        <p>Enter your password to unlock the session key</p>
+        <input type="password" id="modalUnlockPassword" placeholder="Password">
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="modalUnlockBtn">Unlock</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Faucet Modal -->
+    <div class="modal" id="faucetModal" style="display: none;">
+      <div class="modal-content">
+        <h3>🚰 Get Testnet ETH</h3>
+        <p>Choose a faucet to get free testnet ETH:</p>
+        <div class="faucet-grid">
+          <a href="https://sepoliafaucet.com/" target="_blank" class="faucet-card" onclick="closeFaucetModal()">
+            <span class="faucet-icon">🚰</span>
+            <strong>Sepolia Faucet</strong>
+          </a>
+          <a href="https://www.alchemy.com/faucets/ethereum-sepolia" target="_blank" class="faucet-card" onclick="closeFaucetModal()">
+            <span class="faucet-icon">⚗️</span>
+            <strong>Alchemy</strong>
+          </a>
+          <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" class="faucet-card" onclick="closeFaucetModal()">
+            <span class="faucet-icon">☁️</span>
+            <strong>Google Cloud</strong>
+          </a>
+        </div>
+        <p class="modal-hint">Your session key address: <code id="faucetAddress">-</code></p>
+        <button class="btn btn-secondary" onclick="closeFaucetModal()">Close</button>
+      </div>
+    </div>
   </div>
 
-  <!-- QR Code Libraries (using cdnjs for reliability) -->
+  <!-- QR Code Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
   
