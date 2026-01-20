@@ -852,30 +852,42 @@ function generateQrCode() {
   
   const jsonString = JSON.stringify(exportData);
   console.log('QR data length:', jsonString.length, 'chars');
-  console.log('QRCode available:', typeof window.QRCode);
-  
-  // Check if QRCode library is loaded
-  if (typeof window.QRCode === 'undefined') {
-    console.error('QRCode library not loaded');
-    showToast('QR code library not loaded. Please refresh the page.', 'error');
-    return;
-  }
   
   // Get the container div and clear it
   const qrContainer = $('qrCodeContainer');
+  if (!qrContainer) {
+    showToast('QR container not found', 'error');
+    return;
+  }
   qrContainer.innerHTML = '';
   
   try {
-    // Generate QR code using qrcodejs library
-    new window.QRCode(qrContainer, {
-      text: jsonString,
-      width: 256,
-      height: 256,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
-      correctLevel: window.QRCode.CorrectLevel.L  // Low = more capacity
-    });
-    console.log('QR code generated successfully');
+    // Check which QR library is available
+    if (typeof window.qrcode !== 'undefined') {
+      // qrcode-generator library
+      const qr = window.qrcode(0, 'L');
+      qr.addData(jsonString);
+      qr.make();
+      qrContainer.innerHTML = qr.createImgTag(4, 8);
+      console.log('QR code generated with qrcode-generator');
+    } else if (typeof window.QRCode !== 'undefined') {
+      // qrcodejs library fallback
+      new window.QRCode(qrContainer, {
+        text: jsonString,
+        width: 256,
+        height: 256,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: window.QRCode.CorrectLevel?.L || 1
+      });
+      console.log('QR code generated with qrcodejs');
+    } else {
+      console.error('No QR code library loaded');
+      showToast('QR code library not loaded. Please refresh the page.', 'error');
+      return;
+    }
+    
+    showToast('QR code generated!', 'success');
   } catch (error) {
     console.error('QR Code generation error:', error);
     showToast('Failed to generate QR code: ' + error.message, 'error');
@@ -886,11 +898,13 @@ async function startScanner() {
   console.log('Starting scanner...');
   
   // Check if jsQR library is loaded
-  if (typeof window.jsQR === 'undefined') {
-    console.error('jsQR library not loaded');
+  const jsQRLib = window.jsQR || window.JSQR;
+  if (typeof jsQRLib === 'undefined') {
+    console.error('jsQR library not loaded. Available globals:', Object.keys(window).filter(k => k.toLowerCase().includes('qr')));
     showToast('Scanner library not loaded. Please refresh the page.', 'error');
     return;
   }
+  console.log('jsQR library loaded successfully');
   
   try {
     const video = $('scannerVideo');
@@ -940,7 +954,8 @@ async function startScanner() {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
         // Use jsQR to detect QR code
-        const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+        const jsQRFunc = window.jsQR || window.JSQR;
+        const code = jsQRFunc(imageData.data, imageData.width, imageData.height, {
           inversionAttempts: 'dontInvert'
         });
         
