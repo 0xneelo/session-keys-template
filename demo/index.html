@@ -106,8 +106,73 @@
               <input type="password" id="unlockPassword" placeholder="Enter password to unlock">
               <button class="btn btn-secondary" id="unlockBtn">🔓 Unlock</button>
             </div>
-            <button class="btn btn-danger" id="deleteKeyBtn">🗑️ Delete Key</button>
+            <div class="key-actions-row">
+              <button class="btn btn-secondary" id="showQrBtn">📱 Sync to Mobile</button>
+              <button class="btn btn-danger" id="deleteKeyBtn">🗑️ Delete Key</button>
+            </div>
           </div>
+
+          <!-- QR Code Modal -->
+          <div class="qr-modal" id="qrModal" style="display: none;">
+            <div class="qr-modal-content">
+              <div class="qr-modal-header">
+                <h3>📱 Sync Session Key</h3>
+                <button class="btn-close" id="closeQrModal">✕</button>
+              </div>
+              <div class="qr-tabs">
+                <button class="qr-tab active" data-tab="show">Show QR Code</button>
+                <button class="qr-tab" data-tab="scan">Scan QR Code</button>
+              </div>
+              
+              <!-- Show QR Tab -->
+              <div class="qr-tab-content active" id="showQrTab">
+                <p class="qr-description">
+                  Scan this QR code with your other device to sync your session key.
+                  <strong>You'll need your password to unlock it.</strong>
+                </p>
+                <div class="qr-code-container">
+                  <canvas id="qrCanvas"></canvas>
+                </div>
+                <p class="qr-hint">⚠️ The QR contains encrypted data - your password is still required</p>
+              </div>
+              
+              <!-- Scan QR Tab -->
+              <div class="qr-tab-content" id="scanQrTab">
+                <p class="qr-description">
+                  Point your camera at a session key QR code to import it.
+                </p>
+                <div class="scanner-container">
+                  <video id="scannerVideo" autoplay playsinline></video>
+                  <canvas id="scannerCanvas" style="display: none;"></canvas>
+                  <div class="scanner-overlay">
+                    <div class="scanner-frame"></div>
+                  </div>
+                </div>
+                <div class="scanner-controls">
+                  <button class="btn btn-primary" id="startScanBtn">📷 Start Camera</button>
+                  <button class="btn btn-secondary" id="stopScanBtn" style="display: none;">⏹️ Stop</button>
+                </div>
+                <div class="scan-result" id="scanResult" style="display: none;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Import Session Key (shown when no key exists) -->
+      <section class="card" id="importKeySection" style="display: none;">
+        <div class="card-header">
+          <span class="step-number">📥</span>
+          <h2>Import Session Key</h2>
+        </div>
+        <div class="card-content">
+          <p class="description">
+            Scan a QR code from another device to import an existing session key.
+          </p>
+          <button class="btn btn-primary" id="openScannerBtn">
+            <span class="btn-icon">📷</span>
+            Scan QR Code
+          </button>
         </div>
       </section>
 
@@ -220,6 +285,10 @@
     <div class="toast-container" id="toastContainer"></div>
   </div>
 
+  <!-- QR Code Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  
   <!-- Scripts -->
   <script type="module" src="app.js"></script>
 </body>

@@ -268,6 +268,7 @@ function updateUI() {
   // Show/hide sections
   $('createKeySection').style.display = hasKey ? 'none' : 'block';
   $('keyInfoSection').style.display = hasKey ? 'block' : 'none';
+  $('importKeySection').style.display = hasKey ? 'none' : 'block';
   
   // Update key status
   $('keyStatus').textContent = isUnlocked ? 'Unlocked' : 'Locked';
@@ -501,6 +502,216 @@ async function handleSendTransaction() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+ * QR Code Sync Feature
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+let scannerStream = null;
+let scannerInterval = null;
+
+function showQrModal(tab = 'show') {
+  $('qrModal').style.display = 'flex';
+  switchQrTab(tab);
+  
+  if (tab === 'show' && state.sessionKey) {
+    generateQrCode();
+  }
+}
+
+function hideQrModal() {
+  $('qrModal').style.display = 'none';
+  stopScanner();
+}
+
+function switchQrTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.qr-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+  
+  // Update tab content
+  $('showQrTab').classList.toggle('active', tabName === 'show');
+  $('scanQrTab').classList.toggle('active', tabName === 'scan');
+  
+  // Stop scanner if switching away
+  if (tabName !== 'scan') {
+    stopScanner();
+  }
+}
+
+function generateQrCode() {
+  if (!state.sessionKey) return;
+  
+  // Create export data (encrypted - still needs password to use)
+  const exportData = {
+    version: 1,
+    type: 'symmio-session-key',
+    data: {
+      id: state.sessionKey.id,
+      address: state.sessionKey.address,
+      encryptedPrivateKey: state.sessionKey.encryptedPrivateKey,
+      salt: state.sessionKey.salt,
+      iv: state.sessionKey.iv,
+      expiry: state.sessionKey.expiry,
+      createdAt: state.sessionKey.createdAt,
+    }
+  };
+  
+  const jsonString = JSON.stringify(exportData);
+  const canvas = $('qrCanvas');
+  
+  // Generate QR code
+  QRCode.toCanvas(canvas, jsonString, {
+    width: 280,
+    margin: 2,
+    color: {
+      dark: '#000000',
+      light: '#ffffff'
+    },
+    errorCorrectionLevel: 'M'
+  }, function(error) {
+    if (error) {
+      console.error('QR Code generation error:', error);
+      showToast('Failed to generate QR code', 'error');
+    }
+  });
+}
+
+async function startScanner() {
+  try {
+    const video = $('scannerVideo');
+    const canvas = $('scannerCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Request camera access
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    
+    video.srcObject = scannerStream;
+    await video.play();
+    
+    // Update UI
+    $('startScanBtn').style.display = 'none';
+    $('stopScanBtn').style.display = 'inline-flex';
+    $('scanResult').style.display = 'none';
+    
+    // Set canvas size
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Start scanning
+    scannerInterval = setInterval(() => {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Use jsQR to detect QR code
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert'
+        });
+        
+        if (code) {
+          handleScannedCode(code.data);
+        }
+      }
+    }, 100);
+    
+  } catch (error) {
+    console.error('Scanner error:', error);
+    showToast('Failed to access camera: ' + error.message, 'error');
+  }
+}
+
+function stopScanner() {
+  if (scannerInterval) {
+    clearInterval(scannerInterval);
+    scannerInterval = null;
+  }
+  
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(track => track.stop());
+    scannerStream = null;
+  }
+  
+  const video = $('scannerVideo');
+  if (video) {
+    video.srcObject = null;
+  }
+  
+  $('startScanBtn').style.display = 'inline-flex';
+  $('stopScanBtn').style.display = 'none';
+}
+
+async function handleScannedCode(data) {
+  stopScanner();
+  
+  try {
+    const parsed = JSON.parse(data);
+    
+    // Validate the data structure
+    if (parsed.type !== 'symmio-session-key' || !parsed.data) {
+      throw new Error('Invalid QR code format');
+    }
+    
+    const keyData = parsed.data;
+    
+    // Validate required fields
+    if (!keyData.address || !keyData.encryptedPrivateKey || !keyData.salt || !keyData.iv) {
+      throw new Error('Missing required key data');
+    }
+    
+    // Check if key is expired
+    if (keyData.expiry * 1000 < Date.now()) {
+      throw new Error('This session key has expired');
+    }
+    
+    // Check if we already have a key
+    if (state.sessionKey) {
+      if (!confirm('This will replace your current session key. Continue?')) {
+        return;
+      }
+    }
+    
+    // Save the imported key
+    const importedKey = {
+      id: keyData.id || generateKeyId(),
+      address: keyData.address,
+      encryptedPrivateKey: keyData.encryptedPrivateKey,
+      salt: keyData.salt,
+      iv: keyData.iv,
+      expiry: keyData.expiry,
+      createdAt: keyData.createdAt || Math.floor(Date.now() / 1000),
+    };
+    
+    localStorage.setItem(CONFIG.storageKey, JSON.stringify(importedKey));
+    state.sessionKey = importedKey;
+    state.unlockedWallet = null;
+    
+    // Show success
+    $('scanResult').style.display = 'block';
+    $('scanResult').className = 'scan-result success';
+    $('scanResult').innerHTML = `
+      ✅ Session key imported!<br>
+      <small>Address: ${formatAddress(keyData.address)}</small>
+    `;
+    
+    showToast('Session key imported successfully!', 'success');
+    
+    // Close modal after delay
+    setTimeout(() => {
+      hideQrModal();
+      updateUI();
+    }, 2000);
+    
+  } catch (error) {
+    $('scanResult').style.display = 'block';
+    $('scanResult').className = 'scan-result error';
+    $('scanResult').textContent = '❌ ' + error.message;
+    showToast(error.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
  * Initialization
  * ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -529,6 +740,23 @@ async function init() {
   $('deleteKeyBtn').addEventListener('click', handleDeleteKey);
   $('signMessageBtn').addEventListener('click', handleSignMessage);
   $('sendTxBtn').addEventListener('click', handleSendTransaction);
+  
+  // QR Code event listeners
+  $('showQrBtn').addEventListener('click', () => showQrModal('show'));
+  $('closeQrModal').addEventListener('click', hideQrModal);
+  $('startScanBtn').addEventListener('click', startScanner);
+  $('stopScanBtn').addEventListener('click', stopScanner);
+  $('openScannerBtn')?.addEventListener('click', () => showQrModal('scan'));
+  
+  // QR Tab switching
+  document.querySelectorAll('.qr-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchQrTab(tab.dataset.tab));
+  });
+  
+  // Close modal on backdrop click
+  $('qrModal').addEventListener('click', (e) => {
+    if (e.target === $('qrModal')) hideQrModal();
+  });
   
   // Enter key handlers
   $('password').addEventListener('keypress', (e) => {
