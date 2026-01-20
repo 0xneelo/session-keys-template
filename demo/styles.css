@@ -808,13 +808,22 @@ select {
 .qr-code-container {
   display: flex;
   justify-content: center;
+  align-items: center;
   padding: 20px;
   background: white;
   border-radius: var(--radius-md);
   margin-bottom: 16px;
+  min-height: 280px;
 }
 
-#qrCanvas {
+#qrCodeContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#qrCodeContainer img,
+#qrCodeContainer canvas {
   max-width: 100%;
   height: auto;
 }

@@ -131,7 +131,7 @@
                   <strong>You'll need your password to unlock it.</strong>
                 </p>
                 <div class="qr-code-container">
-                  <canvas id="qrCanvas"></canvas>
+                  <div id="qrCodeContainer"></div>
                 </div>
                 <p class="qr-hint">⚠️ The QR contains encrypted data - your password is still required</p>
               </div>
@@ -303,9 +303,9 @@
     <div class="toast-container" id="toastContainer"></div>
   </div>
 
-  <!-- QR Code Libraries -->
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <!-- QR Code Libraries (using cdnjs for reliability) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
   
   <!-- Scripts -->
   <script type="module" src="app.js"></script>

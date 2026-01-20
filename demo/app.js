@@ -809,8 +809,7 @@ function generateQrCode() {
   
   const jsonString = JSON.stringify(exportData);
   console.log('QR data length:', jsonString.length, 'chars');
-  
-  const canvas = $('qrCanvas');
+  console.log('QRCode available:', typeof window.QRCode);
   
   // Check if QRCode library is loaded
   if (typeof window.QRCode === 'undefined') {
@@ -819,28 +818,25 @@ function generateQrCode() {
     return;
   }
   
-  // Clear canvas first
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Get the container div and clear it
+  const qrContainer = $('qrCodeContainer');
+  qrContainer.innerHTML = '';
   
-  // Generate QR code using global QRCode
-  // Use lower error correction for more data capacity
-  window.QRCode.toCanvas(canvas, jsonString, {
-    width: 280,
-    margin: 2,
-    color: {
-      dark: '#000000',
-      light: '#ffffff'
-    },
-    errorCorrectionLevel: 'L'  // Lower = more capacity
-  }, function(error) {
-    if (error) {
-      console.error('QR Code generation error:', error);
-      showToast('Failed to generate QR code: ' + error.message, 'error');
-    } else {
-      console.log('QR code generated successfully');
-    }
-  });
+  try {
+    // Generate QR code using qrcodejs library
+    new window.QRCode(qrContainer, {
+      text: jsonString,
+      width: 256,
+      height: 256,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: window.QRCode.CorrectLevel.L  // Low = more capacity
+    });
+    console.log('QR code generated successfully');
+  } catch (error) {
+    console.error('QR Code generation error:', error);
+    showToast('Failed to generate QR code: ' + error.message, 'error');
+  }
 }
 
 async function startScanner() {
