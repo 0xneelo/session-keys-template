@@ -790,24 +790,26 @@ function switchQrTab(tabName) {
 }
 
 function generateQrCode() {
-  if (!state.sessionKey) return;
+  if (!state.sessionKey) {
+    showToast('No session key to export', 'error');
+    return;
+  }
   
-  // Create export data (encrypted - still needs password to use)
+  // Create compact export data (encrypted - still needs password to use)
+  // Use short keys to minimize QR code size
   const exportData = {
-    version: 1,
-    type: 'symmio-session-key',
-    data: {
-      id: state.sessionKey.id,
-      address: state.sessionKey.address,
-      encryptedPrivateKey: state.sessionKey.encryptedPrivateKey,
-      salt: state.sessionKey.salt,
-      iv: state.sessionKey.iv,
-      expiry: state.sessionKey.expiry,
-      createdAt: state.sessionKey.createdAt,
-    }
+    v: 1,  // version
+    t: 'ssk',  // type: symmio-session-key
+    a: state.sessionKey.address,
+    e: state.sessionKey.encryptedPrivateKey,
+    s: state.sessionKey.salt,
+    i: state.sessionKey.iv,
+    x: state.sessionKey.expiry,
   };
   
   const jsonString = JSON.stringify(exportData);
+  console.log('QR data length:', jsonString.length, 'chars');
+  
   const canvas = $('qrCanvas');
   
   // Check if QRCode library is loaded
@@ -817,7 +819,12 @@ function generateQrCode() {
     return;
   }
   
+  // Clear canvas first
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
   // Generate QR code using global QRCode
+  // Use lower error correction for more data capacity
   window.QRCode.toCanvas(canvas, jsonString, {
     width: 280,
     margin: 2,
@@ -825,11 +832,13 @@ function generateQrCode() {
       dark: '#000000',
       light: '#ffffff'
     },
-    errorCorrectionLevel: 'M'
+    errorCorrectionLevel: 'L'  // Lower = more capacity
   }, function(error) {
     if (error) {
       console.error('QR Code generation error:', error);
-      showToast('Failed to generate QR code', 'error');
+      showToast('Failed to generate QR code: ' + error.message, 'error');
+    } else {
+      console.log('QR code generated successfully');
     }
   });
 }
@@ -906,12 +915,29 @@ async function handleScannedCode(data) {
   try {
     const parsed = JSON.parse(data);
     
-    // Validate the data structure
-    if (parsed.type !== 'symmio-session-key' || !parsed.data) {
+    let keyData;
+    
+    // Support both old format and new compact format
+    if (parsed.t === 'ssk' || parsed.type === 'symmio-session-key') {
+      // New compact format: { v, t, a, e, s, i, x }
+      if (parsed.t === 'ssk') {
+        keyData = {
+          address: parsed.a,
+          encryptedPrivateKey: parsed.e,
+          salt: parsed.s,
+          iv: parsed.i,
+          expiry: parsed.x,
+        };
+      } 
+      // Old format: { version, type, data: {...} }
+      else if (parsed.data) {
+        keyData = parsed.data;
+      } else {
+        throw new Error('Invalid QR code format');
+      }
+    } else {
       throw new Error('Invalid QR code format');
     }
-    
-    const keyData = parsed.data;
     
     // Validate required fields
     if (!keyData.address || !keyData.encryptedPrivateKey || !keyData.salt || !keyData.iv) {
