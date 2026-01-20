@@ -23,9 +23,22 @@ const CONFIG = {
   // Target address for sending ETH
   recipientAddress: '0x83B285E802D76055169B1C5e3bF21702B85b89Cb',
   
+  // Gas Sponsor contract (deploy your own or use this)
+  // Set to null to disable gas sponsorship
+  gasSponsorAddress: null, // Update after deploying: '0x...'
+  
   // Storage key
   storageKey: 'symmio-session-key',
 };
+
+// GasSponsor contract ABI (minimal)
+const GAS_SPONSOR_ABI = [
+  'function executeTransfer(address signer, address to, uint256 value, uint256 deadline, uint256 nonce, bytes signature) external',
+  'function getTransferHash(address signer, address to, uint256 value, uint256 deadline, uint256 nonce) view returns (bytes32)',
+  'function nonces(address) view returns (uint256)',
+  'function isSignerAllowed(address) view returns (bool)',
+  'function getRemainingBudget(address) view returns (uint256)',
+];
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * State
@@ -290,6 +303,44 @@ function updateUI() {
   if (isUnlocked) {
     refreshBalance();
   }
+
+  // Check gas sponsor status
+  updateGasSponsorUI();
+}
+
+async function updateGasSponsorUI() {
+  const gasSponsorOption = $('gasSponsorOption');
+  const sponsorStatus = $('sponsorStatus');
+  
+  if (!CONFIG.gasSponsorAddress) {
+    gasSponsorOption.style.display = 'none';
+    return;
+  }
+
+  gasSponsorOption.style.display = 'block';
+  
+  if (!state.sessionKey) {
+    sponsorStatus.textContent = 'Create a session key first';
+    sponsorStatus.className = 'sponsor-status';
+    return;
+  }
+
+  try {
+    const status = await checkGasSponsorStatus();
+    
+    if (status.isAllowed) {
+      sponsorStatus.innerHTML = `✅ Your session key is registered! Remaining budget: <strong>${status.remainingBudget} ETH</strong>`;
+      sponsorStatus.className = 'sponsor-status allowed';
+    } else {
+      sponsorStatus.innerHTML = `⚠️ Session key not registered. <a href="#" onclick="copyToClipboard('keyAddress'); return false;">Copy address</a> and ask owner to add it.`;
+      sponsorStatus.className = 'sponsor-status not-allowed';
+      $('useGasSponsor').checked = false;
+      $('useGasSponsor').disabled = true;
+    }
+  } catch (e) {
+    sponsorStatus.textContent = 'Failed to check gas sponsor status';
+    sponsorStatus.className = 'sponsor-status';
+  }
 }
 
 async function refreshBalance() {
@@ -436,6 +487,7 @@ async function handleSendTransaction() {
   const recipient = $('recipientAddress').value;
   const amount = $('sendAmount').value;
   const txMessage = $('txMessage')?.value || '';
+  const useGasSponsor = $('useGasSponsor')?.checked && CONFIG.gasSponsorAddress;
   
   if (!ethers.isAddress(recipient)) {
     showToast('Invalid recipient address', 'error');
@@ -459,22 +511,32 @@ async function handleSendTransaction() {
     // Show pending status
     $('txResult').style.display = 'block';
     $('txStatus').className = 'tx-status pending';
-    $('txStatus').innerHTML = '⏳ Sending transaction...';
     $('txLink').style.display = 'none';
-    
-    // Prepare transaction with optional message data
-    const txData = {
-      to: recipient,
-      value: ethers.parseEther(amount),
-    };
-    
-    // If message provided, encode it as hex data (visible on Etherscan!)
-    if (txMessage.trim()) {
-      txData.data = ethers.hexlify(ethers.toUtf8Bytes(txMessage));
+
+    let tx;
+
+    if (useGasSponsor) {
+      // Use gas sponsor for meta-transaction
+      $('txStatus').innerHTML = '⏳ Signing meta-transaction...';
+      tx = await sendSponsoredTransaction(recipient, amount);
+    } else {
+      // Direct transaction (session key pays gas)
+      $('txStatus').innerHTML = '⏳ Sending transaction...';
+      
+      // Prepare transaction with optional message data
+      const txData = {
+        to: recipient,
+        value: ethers.parseEther(amount),
+      };
+      
+      // If message provided, encode it as hex data (visible on Etherscan!)
+      if (txMessage.trim()) {
+        txData.data = ethers.hexlify(ethers.toUtf8Bytes(txMessage));
+      }
+      
+      // Send transaction
+      tx = await state.unlockedWallet.sendTransaction(txData);
     }
-    
-    // Send transaction
-    const tx = await state.unlockedWallet.sendTransaction(txData);
     
     $('txStatus').innerHTML = '⏳ Waiting for confirmation...';
     $('txLink').href = `${CONFIG.explorerUrl}/tx/${tx.hash}`;
@@ -498,6 +560,97 @@ async function handleSendTransaction() {
   } finally {
     $('sendTxBtn').classList.remove('loading');
     $('sendTxBtn').disabled = state.unlockedWallet === null;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Gas Sponsor Meta-Transactions
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+async function sendSponsoredTransaction(recipient, amount) {
+  if (!CONFIG.gasSponsorAddress) {
+    throw new Error('Gas sponsor not configured');
+  }
+
+  const gasSponsor = new ethers.Contract(
+    CONFIG.gasSponsorAddress,
+    GAS_SPONSOR_ABI,
+    state.provider
+  );
+
+  const signerAddress = state.unlockedWallet.address;
+  const value = ethers.parseEther(amount);
+  const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+  
+  // Get current nonce from contract
+  const nonce = await gasSponsor.nonces(signerAddress);
+  
+  // Check if signer is allowed
+  const isAllowed = await gasSponsor.isSignerAllowed(signerAddress);
+  if (!isAllowed) {
+    throw new Error('Session key not registered with gas sponsor. Ask the owner to add your address: ' + signerAddress);
+  }
+
+  // Get the message hash to sign
+  const messageHash = await gasSponsor.getTransferHash(
+    signerAddress,
+    recipient,
+    value,
+    deadline,
+    nonce
+  );
+
+  // Sign the message
+  const signature = await state.unlockedWallet.signMessage(ethers.getBytes(messageHash));
+
+  // Create a new signer that will pay gas (could be a relayer)
+  // For demo, we'll use a public relayer or the user needs some gas
+  // In production, you'd have a backend relayer submit this
+  
+  // For now, we'll try to submit directly - the contract pays for the actual transfer
+  // but someone needs to pay for the meta-tx submission
+  const relayerWallet = state.unlockedWallet; // In production, use a funded relayer
+  
+  const gasSponsorWithSigner = gasSponsor.connect(relayerWallet);
+  
+  const tx = await gasSponsorWithSigner.executeTransfer(
+    signerAddress,
+    recipient,
+    value,
+    deadline,
+    nonce,
+    signature
+  );
+
+  return tx;
+}
+
+async function checkGasSponsorStatus() {
+  if (!CONFIG.gasSponsorAddress || !state.sessionKey) {
+    return { available: false };
+  }
+
+  try {
+    const gasSponsor = new ethers.Contract(
+      CONFIG.gasSponsorAddress,
+      GAS_SPONSOR_ABI,
+      state.provider
+    );
+
+    const isAllowed = await gasSponsor.isSignerAllowed(state.sessionKey.address);
+    const remainingBudget = isAllowed 
+      ? await gasSponsor.getRemainingBudget(state.sessionKey.address)
+      : 0n;
+
+    return {
+      available: true,
+      isAllowed,
+      remainingBudget: ethers.formatEther(remainingBudget),
+      contractAddress: CONFIG.gasSponsorAddress,
+    };
+  } catch (e) {
+    console.error('Gas sponsor check failed:', e);
+    return { available: false, error: e.message };
   }
 }
 

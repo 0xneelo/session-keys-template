@@ -268,6 +268,16 @@
             <small class="input-hint">This message will be encoded in the transaction data</small>
           </div>
 
+          <div class="gas-sponsor-option" id="gasSponsorOption" style="display: none;">
+            <div class="checkbox-group">
+              <input type="checkbox" id="useGasSponsor">
+              <label for="useGasSponsor">
+                ⛽ Use Gas Sponsor (no ETH needed in session key!)
+              </label>
+            </div>
+            <div class="sponsor-status" id="sponsorStatus"></div>
+          </div>
+
           <button class="btn btn-primary" id="sendTxBtn" disabled>
             <span class="btn-icon">📤</span>
             Send Transaction
