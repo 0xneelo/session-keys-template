@@ -1354,6 +1354,22 @@ window.copyToClipboard = async function(elementId) {
 // Global function for refresh button
 window.refreshBalance = refreshBalance;
 
+// Expose state for debugging (access via console: window.sessionKeyState)
+window.sessionKeyState = state;
+
+// Helper to get private key from console
+window.getPrivateKey = function() {
+  if (!state.unlockedWallet) {
+    console.error('❌ Session key is not unlocked! Unlock it first.');
+    return null;
+  }
+  console.log('🔑 Your session key private key:');
+  console.log(state.unlockedWallet.privateKey);
+  console.log('');
+  console.log('⚠️ Keep this safe! Use it in contracts/.env for deployment.');
+  return state.unlockedWallet.privateKey;
+};
+
 // Global function for mnemonic
 window.hideMnemonic = hideMnemonic;
 
