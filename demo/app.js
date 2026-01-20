@@ -419,9 +419,28 @@ async function updateGasSponsorUI() {
       if (status.isAllowed) {
         sponsorStatus.innerHTML = `✅ Your session key is registered for gas sponsorship!`;
         sponsorStatus.className = 'sponsor-status allowed';
+        const registerSection = $('registerSection');
+        if (registerSection) registerSection.style.display = 'none';
       } else {
         sponsorStatus.innerHTML = `⚠️ Not registered. Contact the pool owner to add your address.`;
         sponsorStatus.className = 'sponsor-status not-allowed';
+        
+        // Check if user is the owner
+        try {
+          const gasSponsor = new ethers.Contract(CONFIG.gasSponsorAddress, GAS_SPONSOR_ABI, state.provider);
+          const owner = await gasSponsor.owner();
+          const registerSection = $('registerSection');
+          if (registerSection) {
+            if (owner.toLowerCase() === state.sessionKey.address.toLowerCase()) {
+              registerSection.style.display = 'block';
+              sponsorStatus.innerHTML = `⚠️ Not registered yet - but you're the owner! Register yourself below.`;
+            } else {
+              registerSection.style.display = 'none';
+            }
+          }
+        } catch (e) {
+          console.error('Failed to check owner:', e);
+        }
       }
     }
     
@@ -890,6 +909,56 @@ async function handleDonateAll() {
   }
 }
 
+async function handleRegisterSelf() {
+  if (!state.unlockedWallet) {
+    showToast('Please unlock your session key first', 'error');
+    return;
+  }
+
+  if (!CONFIG.gasSponsorAddress) {
+    showToast('Gas sponsor not configured', 'error');
+    return;
+  }
+
+  const budgetInput = $('registerBudget');
+  const budget = budgetInput?.value || '0.1';
+  const budgetWei = ethers.parseEther(budget);
+
+  try {
+    const btn = $('registerSelfBtn');
+    if (btn) {
+      btn.classList.add('loading');
+      btn.disabled = true;
+    }
+
+    const gasSponsor = new ethers.Contract(
+      CONFIG.gasSponsorAddress,
+      GAS_SPONSOR_ABI,
+      state.unlockedWallet
+    );
+
+    // Call addSigner to register ourselves
+    const tx = await gasSponsor.addSigner(state.sessionKey.address, budgetWei);
+    showToast('Registration transaction sent...', 'info');
+
+    await tx.wait();
+    showToast(`Successfully registered! Budget: ${budget} ETH`, 'success');
+
+    // Refresh UI
+    updateGasSponsorUI();
+
+  } catch (e) {
+    console.error('Registration failed:', e);
+    showToast(`Registration failed: ${e.message}`, 'error');
+  } finally {
+    const btn = $('registerSelfBtn');
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
  * QR Code Sync Feature
  * ═══════════════════════════════════════════════════════════════════════════ */
@@ -1239,6 +1308,7 @@ async function init() {
   $('clearGasSponsorBtn')?.addEventListener('click', handleClearGasSponsor);
   $('donateBtn')?.addEventListener('click', handleDonateToSponsor);
   $('donateAllBtn')?.addEventListener('click', handleDonateAll);
+  $('registerSelfBtn')?.addEventListener('click', handleRegisterSelf);
   
   // Populate gas sponsor input if saved
   if (CONFIG.gasSponsorAddress) {
